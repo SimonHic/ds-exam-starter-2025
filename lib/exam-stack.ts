@@ -136,6 +136,8 @@ export class ExamStack extends cdk.Stack {
       new s3n.SnsDestination(topic1)
     )
 
+    bucket.grantRead(lambdaXFn)
+
     topic1.addSubscription(new subs.SqsSubscription(queueA));
     topic1.addSubscription(new subs.SqsSubscription(queueB));
     lambdaXFn.addEventSource(new events.SqsEventSource(queueA));
