@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, DeleteCommand, GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { Role } from "aws-cdk-lib/aws-iam";
 
 const client = createDDbDocClient();
 
@@ -11,9 +12,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
     console.log("Event: ", JSON.stringify(event));
     const pathParameters  = event?.pathParameters;
-    //const queryParams  = event?.queryStringParameters; For next part
+    const queryParams  = event?.queryStringParameters; 
     const movieId = pathParameters?.movieId ? parseInt(pathParameters.movieId) : undefined;
-    //const includePublisher = queryParams?.publisher === "true"; // Check to see if 'true' is there -> For Next part
+    const includeRole = queryParams?.role === "true"; // Check to see if 'true' is there
 
     if (!movieId) {
       return {
@@ -41,6 +42,24 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         body: JSON.stringify({ Message: "Invalid movie Id" }),
       };
     }
+
+    const body: { data: Record<string, any>; role?: any []} ={
+      data: commandOutput.Item,
+    };
+
+    if (includeRole){
+      const roleResponse = await client.send(
+        new QueryCommand({
+          TableName: process.env.TABLE_NAME,
+          KeyConditionExpression: "movieId = :g",
+          ExpressionAttributeValues:{
+            ":g": movieId,
+          },
+        })
+      );
+      body.role = roleResponse.Items || [];
+    }
+
 
     return {
       statusCode: 200,
