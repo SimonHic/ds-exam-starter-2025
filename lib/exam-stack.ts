@@ -131,6 +131,17 @@ export class ExamStack extends cdk.Stack {
         REGION: "eu-west-1",
       },
     });
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.SnsDestination(topic1)
+    )
+
+    topic1.addSubscription(new subs.SqsSubscription(queueA));
+    topic1.addSubscription(new subs.SqsSubscription(queueB));
+    lambdaXFn.addEventSource(new events.SqsEventSource(queueA));
+
+    //Lambda 'Y' not Inlcuded in required diagram
+    //lambdaYFn.addEventSource(new events.SqsEventSource(queueB));
     
   }
 }
