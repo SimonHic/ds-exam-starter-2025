@@ -57,6 +57,8 @@ export class ExamStack extends cdk.Stack {
       }),
     });
 
+    table.grantReadData(question1Fn);
+
     const api = new apig.RestApi(this, "ExamAPI", {
       description: "Exam api",
       deployOptions: {
@@ -71,6 +73,20 @@ export class ExamStack extends cdk.Stack {
     });
 
     const anEndpoint = api.root.addResource("patha");
+
+
+    // Movies endpoint
+    const moviesEndpoint = api.root.addResource("crews");
+    moviesEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(question1Fn, { proxy: true })
+    );
+    // Specific Movie crew role endpoint
+    const specificGameEndpoint = moviesEndpoint.addResource("{role}");
+    specificGameEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(question1Fn, { proxy: true })
+    );
 
 
     // ==================================

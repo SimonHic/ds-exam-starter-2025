@@ -1,13 +1,46 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = createDDbDocClient();
+
+
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
     console.log("Event: ", JSON.stringify(event));
+    const pathParameters  = event?.pathParameters;
+    //const queryParams  = event?.queryStringParameters; For next part
+    const movieId = pathParameters?.movieId ? parseInt(pathParameters.movieId) : undefined;
+    //const includePublisher = queryParams?.publisher === "true"; // Check to see if 'true' is there -> For Next part
+
+    if (!movieId) {
+      return {
+        statusCode: 404,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ Message: "Missing movie Id" }),
+      };
+    }
+
+    const commandOutput = await client.send(
+      new GetCommand({
+        TableName: process.env.TABLE_NAME,
+        Key: { id: movieId },
+      })
+    );
+    console.log("GetCommand response: ", commandOutput);
+    if (!commandOutput.Item) {
+      return {
+        statusCode: 404,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ Message: "Invalid movie Id" }),
+      };
+    }
 
     return {
       statusCode: 200,
